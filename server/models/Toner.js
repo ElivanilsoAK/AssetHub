@@ -1,44 +1,46 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../database/database');
-const Printer = require('./Printer');
+// server/models/Toner.js
+const { DataTypes } = require('sequelize'); //
+const sequelize = require('../database/database'); //
 
 const Toner = sequelize.define('Toner', {
   id: {
     type: DataTypes.INTEGER,
+    autoIncrement: true,
     primaryKey: true,
-    autoIncrement: true
+  },
+  color: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'black', // Ex: black, cyan, magenta, yellow
   },
   model: {
     type: DataTypes.STRING,
-    allowNull: false
-  },
-  color: {
-    type: DataTypes.ENUM('black', 'cyan', 'magenta', 'yellow', 'other'),
     allowNull: false,
-    defaultValue: 'black'
+  },
+  identificationCode: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true,
   },
   compatiblePrinters: {
-    type: DataTypes.STRING,
-    allowNull: true
+    type: DataTypes.STRING, // String para armazenar múltiplos modelos separados por vírgula
+    allowNull: true,
   },
-  currentStock: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 0
-  },
-  minimumStock: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 1
+  purchaseDate: {
+    type: DataTypes.DATEONLY,
+    allowNull: true,
   },
   notes: {
     type: DataTypes.TEXT,
-    allowNull: true
-  }
+    allowNull: true,
+  },
+  status: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'available', // Ex: available, in_stock, low_stock, empty, discarded
+  },
+}, {
+  timestamps: true,
 });
-
-// Relacionamento com impressoras compatíveis (muitos para muitos)
-Toner.belongsToMany(Printer, { through: 'PrinterToner', foreignKey: 'tonerId' });
-Printer.belongsToMany(Toner, { through: 'PrinterToner', foreignKey: 'printerId' });
 
 module.exports = Toner;
