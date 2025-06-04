@@ -2,21 +2,23 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 
-// Páginas
+// Componentes de Layout
+import Layout from './components/Layout'; // Importar o componente de Layout
+
+// Páginas (não precisa mais importar os componentes individualmente aqui, pois serão rotas filhas)
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Inventory from './pages/Inventory';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
-
-// Páginas de equipamentos (Importações corrigidas para default)
 import Computers from './pages/equipment/Computers';
 import MobileDevices from './pages/equipment/MobileDevices';
 import Bags from './pages/equipment/Bags';
 import Printers from './pages/equipment/Printers';
 import Toners from './pages/equipment/Toners';
 
-// Tema personalizado com cores roxas (estilo iPhone)
+
+// Tema personalizado (mantém-se o mesmo)
 const theme = createTheme({
   palette: {
     primary: {
@@ -69,17 +71,21 @@ function App() {
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/inventory" element={<Inventory />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/settings" element={<Settings />} />
-          
-          {/* Rotas de equipamentos */}
-          <Route path="/equipment/computers" element={<Computers />} />
-          <Route path="/equipment/mobile-devices" element={<MobileDevices />} />
-          <Route path="/equipment/bags" element={<Bags />} />
-          <Route path="/equipment/printers" element={<Printers />} />
-          <Route path="/equipment/toners" element={<Toners />} />
+
+          {/* Todas as rotas que usam a sidebar serão filhas de / */}
+          <Route element={<Layout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/inventory" element={<Inventory />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/settings" element={<Settings />} />
+
+            {/* Rotas de equipamentos */}
+            <Route path="/equipment/computers" element={<Computers />} />
+            <Route path="/equipment/mobile-devices" element={<MobileDevices />} />
+            <Route path="/equipment/bags" element={<Bags />} />
+            <Route path="/equipment/printers" element={<Printers />} />
+            <Route path="/equipment/toners" element={<Toners />} />
+          </Route>
         </Routes>
       </Router>
     </ThemeProvider>
