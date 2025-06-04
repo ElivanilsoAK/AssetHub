@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { motion } from 'framer-motion';
+// client/src/pages/equipment/Bags.jsx
+import { useState, useEffect, useCallback } from 'react'; //
+import { useNavigate } from 'react-router-dom'; //
+import axios from 'axios'; //
+import { motion } from 'framer-motion'; //
+import debounce from 'lodash.debounce'; // Importado para funcionalidade de busca/filtro com atraso
+
 import {
   Box,
   Container,
@@ -28,128 +31,38 @@ import {
   Chip,
   Snackbar,
   Alert,
-  CircularProgress,
-  InputAdornment,  
-  Avatar           
+  CircularProgress,   // Importado
+  InputAdornment,     // Importado
+  // Avatar não é mais necessário aqui se a Sidebar for um componente separado.
+  // Se a Sidebar estiver neste arquivo ou Avatar for usado diretamente aqui, importe:
+  // Avatar
 } from '@mui/material';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Dashboard as DashboardIcon,
-  Inventory as InventoryIcon,
-  Assessment as ReportsIcon,
-  Settings as SettingsIcon,
-  ExitToApp as LogoutIcon,
-  Search as SearchIcon,
-  FilterList as FilterIcon,
-  Refresh as RefreshIcon,
-  Add as AddIcon
+  // Ícones de navegação não são mais necessários aqui se a Sidebar for um componente separado.
+  // Dashboard as DashboardIcon,
+  // Inventory as InventoryIcon,
+  // Assessment as ReportsIcon,
+  // Settings as SettingsIcon,
+  // ExitToApp as LogoutIcon,
+  Search as SearchIcon, //
+  FilterList as FilterIcon, //
+  Refresh as RefreshIcon, //
+  Add as AddIcon // Importado
 } from '@mui/icons-material';
 
-// Componente Sidebar reutilizável
-const Sidebar = ({ onLogout }) => {
-  const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    // Obter informações do usuário do localStorage
-    const userData = JSON.parse(localStorage.getItem('user'));
-    if (userData) {
-      setUser(userData);
-    }
-  }, []);
-
-  return (
-    <Paper
-      sx={{
-        height: '100vh',
-        width: '250px',
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        borderRadius: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        bgcolor: 'primary.main',
-        color: 'white'
-      }}
-    >
-      <Box sx={{ p: 2, textAlign: 'center' }}>
-        <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 1 }}>
-          AssetHUB
-        </Typography>
-        {user && (
-          <Box sx={{ mb: 2 }}>
-            <Avatar sx={{ width: 60, height: 60, mx: 'auto', mb: 1, bgcolor: 'primary.light' }}>
-              {user.name.charAt(0)}
-            </Avatar>
-            <Typography variant="body1">{user.name}</Typography>
-            <Typography variant="body2" sx={{ opacity: 0.8 }}>
-              {user.role}
-            </Typography>
-          </Box>
-        )}
-      </Box>
-      <Box sx={{ flexGrow: 1, p: 2 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 1
-          }}
-        >
-          <Button
-            startIcon={<DashboardIcon />}
-            sx={{ justifyContent: 'flex-start', color: 'white' }}
-            onClick={() => navigate('/dashboard')}
-          >
-            Dashboard
-          </Button>
-          <Button
-            startIcon={<InventoryIcon />}
-            sx={{ justifyContent: 'flex-start', color: 'white' }}
-            onClick={() => navigate('/inventory')}
-          >
-            Inventário
-          </Button>
-          <Button
-            startIcon={<ReportsIcon />}
-            sx={{ justifyContent: 'flex-start', color: 'white' }}
-            onClick={() => navigate('/reports')}
-          >
-            Relatórios
-          </Button>
-          <Button
-            startIcon={<SettingsIcon />}
-            sx={{ justifyContent: 'flex-start', color: 'white' }}
-            onClick={() => navigate('/settings')}
-          >
-            Configurações
-          </Button>
-        </Box>
-      </Box>
-      <Box sx={{ p: 2 }}>
-        <Button
-          fullWidth
-          startIcon={<LogoutIcon />}
-          onClick={onLogout}
-          sx={{ color: 'white' }}
-        >
-          Sair
-        </Button>
-      </Box>
-    </Paper>
-  );
-};
+// Define a URL base da API usando a variável de ambiente do Vite
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const Bags = () => {
-  const navigate = useNavigate();
-  const [bags, setBags] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [currentBag, setCurrentBag] = useState(null);
-  const [formData, setFormData] = useState({
+  const navigate = useNavigate(); //
+  const [bags, setBags] = useState([]); //
+  const [loading, setLoading] = useState(true); //
+  const [error, setError] = useState(null); //
+  const [openDialog, setOpenDialog] = useState(false); //
+  const [currentBag, setCurrentBag] = useState(null); //
+  const [formData, setFormData] = useState({ //
     type: 'backpack',
     brand: '',
     model: '',
@@ -159,28 +72,42 @@ const Bags = () => {
     notes: '',
     status: 'available'
   });
-  const [snackbar, setSnackbar] = useState({
+  const [snackbar, setSnackbar] = useState({ //
     open: false,
     message: '',
     severity: 'success'
   });
 
-  useEffect(() => {
-    // Verificar se o usuário está autenticado
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/login');
-      return;
-    }
+  // Novos estados para busca e filtro
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
 
-    fetchBags();
-  }, [navigate]);
-
-  const fetchBags = async () => {
+  // Função para buscar as mochilas, agora com suporte a busca e filtros
+  const fetchBags = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/equipment/bags', {
+      if (!token) {
+        navigate('/login'); // Redireciona se não houver token
+        return;
+      }
+
+      // Constrói os parâmetros de consulta
+      const queryParams = new URLSearchParams();
+      if (searchTerm) {
+        queryParams.append('search', searchTerm);
+      }
+      if (filterType) {
+        queryParams.append('type', filterType);
+      }
+      if (filterStatus) {
+        queryParams.append('status', filterStatus);
+      }
+      
+      const url = `${API_BASE_URL}/equipment/bags?${queryParams.toString()}`;
+
+      const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setBags(response.data);
@@ -190,7 +117,23 @@ const Bags = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate, searchTerm, filterType, filterStatus]); // Dependências para useCallback
+
+  // Usa useEffect para carregar as mochilas na montagem e quando os filtros/busca mudam
+  useEffect(() => {
+    // A verificação de token é essencial aqui.
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    
+    // Chama a versão debounced da função de busca ao montar ou quando os filtros/busca mudam
+    debouncedFetchBags(searchTerm, filterType, filterStatus);
+  }, [navigate, searchTerm, filterType, filterStatus, debouncedFetchBags]);
+
+  // Versão "debounced" da função fetchBags para evitar múltiplas chamadas à API
+  const debouncedFetchBags = useCallback(debounce(fetchBags, 500), [fetchBags]);
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
@@ -220,6 +163,7 @@ const Bags = () => {
       model: bag.model || '',
       identificationCode: bag.identificationCode,
       color: bag.color || '',
+      // Formata a data para 'YYYY-MM-DD' para o input type="date"
       purchaseDate: bag.purchaseDate ? new Date(bag.purchaseDate).toISOString().split('T')[0] : '',
       notes: bag.notes || '',
       status: bag.status
@@ -234,7 +178,7 @@ const Bags = () => {
 
       if (currentBag) {
         // Atualizar mochila existente
-        await axios.put(`http://localhost:5000/api/equipment/bags/${currentBag.id}`, formData, { headers });
+        await axios.put(`${API_BASE_URL}/equipment/bags/${currentBag.id}`, formData, { headers });
         setSnackbar({
           open: true,
           message: 'Mochila atualizada com sucesso!',
@@ -242,7 +186,7 @@ const Bags = () => {
         });
       } else {
         // Criar nova mochila
-        await axios.post('http://localhost:5000/api/equipment/bags', formData, { headers });
+        await axios.post(`${API_BASE_URL}/equipment/bags`, formData, { headers });
         setSnackbar({
           open: true,
           message: 'Mochila adicionada com sucesso!',
@@ -251,7 +195,7 @@ const Bags = () => {
       }
 
       setOpenDialog(false);
-      fetchBags();
+      debouncedFetchBags(searchTerm, filterType, filterStatus); // Recarrega com os filtros/busca atuais
     } catch (err) {
       setSnackbar({
         open: true,
@@ -265,7 +209,7 @@ const Bags = () => {
     if (window.confirm('Tem certeza que deseja excluir esta mochila?')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:5000/api/equipment/bags/${id}`, {
+        await axios.delete(`${API_BASE_URL}/equipment/bags/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setSnackbar({
@@ -273,7 +217,7 @@ const Bags = () => {
           message: 'Mochila excluída com sucesso!',
           severity: 'success'
         });
-        fetchBags();
+        debouncedFetchBags(searchTerm, filterType, filterStatus); // Recarrega com os filtros/busca atuais
       } catch (err) {
         setSnackbar({
           open: true,
@@ -284,139 +228,172 @@ const Bags = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login');
-  };
+  // A função handleLogout foi movida para o componente Sidebar ou Layout.
+  // Não é mais necessária aqui se a Sidebar for um componente separado.
+  // const handleLogout = () => {
+  //   localStorage.removeItem('token');
+  //   localStorage.removeItem('user');
+  //   navigate('/login');
+  // };
 
   const handleCloseSnackbar = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
   };
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <Sidebar onLogout={handleLogout} />
+    <Box> {/* Remove o display: 'flex' e ml: '250px' daqui, agora gerenciado pelo Layout */}
+      {/* A Sidebar não é mais renderizada diretamente aqui, ela é parte do Layout */}
+      {/* <Sidebar onLogout={handleLogout} /> */}
       
-      <Box sx={{ flexGrow: 1, ml: '250px', p: 3 }}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <Container maxWidth="xl">
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, alignItems: 'center' }}>
-              <Typography variant="h4" component="h1" gutterBottom>
-                Mochilas e Cases
-              </Typography>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleAddBag}
-                startIcon={<AddIcon />}
-              >
-                Adicionar
-              </Button>
-            </Box>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Container maxWidth="xl">
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, alignItems: 'center' }}>
+            <Typography variant="h4" component="h1" gutterBottom>
+              Mochilas e Cases
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleAddBag}
+              startIcon={<AddIcon />}
+            >
+              Adicionar
+            </Button>
+          </Box>
 
-            <Paper sx={{ mb: 3, p: 2 }}>
-              <Box sx={{ display: 'flex', mb: 2 }}>
-                <TextField
-                  placeholder="Buscar..."
-                  variant="outlined"
-                  size="small"
-                  sx={{ mr: 1, flexGrow: 1 }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-                <Button
-                  variant="outlined"
-                  startIcon={<FilterIcon />}
-                  sx={{ mr: 1 }}
+          <Paper sx={{ mb: 3, p: 2 }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+              <TextField
+                placeholder="Buscar..."
+                variant="outlined"
+                size="small"
+                sx={{ flexGrow: 1, minWidth: 200 }}
+                value={searchTerm}
+                onChange={handleSearchChange}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <FormControl size="small" sx={{ minWidth: 120 }}>
+                <InputLabel>Tipo</InputLabel>
+                <Select
+                  name="filterType"
+                  value={filterType}
+                  onChange={handleFilterTypeChange}
+                  label="Tipo"
                 >
-                  Filtros
-                </Button>
-                <IconButton onClick={fetchBags}>
-                  <RefreshIcon />
-                </IconButton>
-              </Box>
-            </Paper>
+                  <MenuItem value="">Todos</MenuItem>
+                  <MenuItem value="backpack">Mochila</MenuItem>
+                  <MenuItem value="case">Case</MenuItem>
+                  <MenuItem value="bag">Bolsa</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 120 }}>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  name="filterStatus"
+                  value={filterStatus}
+                  onChange={handleFilterStatusChange}
+                  label="Status"
+                >
+                  <MenuItem value="">Todos</MenuItem>
+                  <MenuItem value="available">Disponível</MenuItem>
+                  <MenuItem value="in_use">Em Uso</MenuItem>
+                  <MenuItem value="maintenance">Em Manutenção</MenuItem>
+                  <MenuItem value="discarded">Descartado</MenuItem>
+                </Select>
+              </FormControl>
+              {/* O botão "Aplicar Filtros" é menos crítico com o debounce, mas pode ser mantido para UX explícita */}
+              <Button
+                variant="outlined"
+                startIcon={<FilterIcon />}
+                onClick={() => debouncedFetchBags(searchTerm, filterType, filterStatus)}
+              >
+                Aplicar
+              </Button>
+              <IconButton onClick={() => debouncedFetchBags(searchTerm, filterType, filterStatus)}>
+                <RefreshIcon />
+              </IconButton>
+            </Box>
+          </Paper>
 
-            {loading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-                <CircularProgress />
-              </Box>
-            ) : error ? (
-              <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>
-            ) : (
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : error ? (
+            <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>
+          ) : (
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Tipo</TableCell>
+                    <TableCell>Marca</TableCell>
+                    <TableCell>Modelo</TableCell>
+                    <TableCell>Código</TableCell>
+                    <TableCell>Cor</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Ações</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {bags.length === 0 ? (
                     <TableRow>
-                      <TableCell>Tipo</TableCell>
-                      <TableCell>Marca</TableCell>
-                      <TableCell>Modelo</TableCell>
-                      <TableCell>Código</TableCell>
-                      <TableCell>Cor</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Ações</TableCell>
+                      <TableCell colSpan={7} align="center">
+                        Nenhuma mochila cadastrada
+                      </TableCell>
                     </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {bags.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} align="center">
-                          Nenhuma mochila cadastrada
+                  ) : (
+                    bags.map((bag) => (
+                      <TableRow key={bag.id}>
+                        <TableCell>
+                          <Chip 
+                            label={bag.type === 'backpack' ? 'Mochila' : bag.type === 'case' ? 'Case' : 'Bolsa'}
+                            color={bag.status === 'available' ? 'primary' : bag.type === 'case' ? 'secondary' : 'default'} // Ajuste de cor
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>{bag.brand}</TableCell>
+                        <TableCell>{bag.model || '-'}</TableCell>
+                        <TableCell>{bag.identificationCode}</TableCell>
+                        <TableCell>{bag.color || '-'}</TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={bag.status === 'available' ? 'Disponível' : 
+                                  bag.status === 'in_use' ? 'Em Uso' : 
+                                  bag.status === 'maintenance' ? 'Em Manutenção' : 'Descartado'}
+                            color={bag.status === 'available' ? 'success' : 
+                                  bag.status === 'in_use' ? 'primary' : 
+                                  bag.status === 'maintenance' ? 'warning' : 'error'}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <IconButton size="small" onClick={() => handleEditBag(bag)}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton size="small" onClick={() => handleDeleteBag(bag.id)}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
                         </TableCell>
                       </TableRow>
-                    ) : (
-                      bags.map((bag) => (
-                        <TableRow key={bag.id}>
-                          <TableCell>
-                            <Chip 
-                              label={bag.type === 'backpack' ? 'Mochila' : bag.type === 'case' ? 'Case' : 'Bolsa'}
-                              color={bag.type === 'backpack' ? 'primary' : bag.type === 'case' ? 'secondary' : 'default'}
-                              size="small"
-                            />
-                          </TableCell>
-                          <TableCell>{bag.brand}</TableCell>
-                          <TableCell>{bag.model || '-'}</TableCell>
-                          <TableCell>{bag.identificationCode}</TableCell>
-                          <TableCell>{bag.color || '-'}</TableCell>
-                          <TableCell>
-                            <Chip 
-                              label={bag.status === 'available' ? 'Disponível' : 
-                                    bag.status === 'in_use' ? 'Em Uso' : 
-                                    bag.status === 'maintenance' ? 'Em Manutenção' : 'Descartado'}
-                              color={bag.status === 'available' ? 'success' : 
-                                    bag.status === 'in_use' ? 'primary' : 
-                                    bag.status === 'maintenance' ? 'warning' : 'error'}
-                              size="small"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <IconButton size="small" onClick={() => handleEditBag(bag)}>
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton size="small" onClick={() => handleDeleteBag(bag.id)}>
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
-          </Container>
-        </motion.div>
-      </Box>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Container>
+      </motion.div>
 
       {/* Dialog para adicionar/editar mochila */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth>
