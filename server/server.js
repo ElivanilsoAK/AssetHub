@@ -3,7 +3,6 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const sequelize = require('./database/database');
-
 // Carregar variáveis de ambiente
 dotenv.config();
 
@@ -16,23 +15,21 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Importar rotas
 const authRoutes = require('./routes/auth');
-
-// Importar rotas de equipamentos
 const computerRoutes = require('./routes/equipment/computers');
-const mobileDeviceRoutes = require('./routes/equipment/mobileDevices');
+const mobileDeviceRoutes = require('./routes/equipment/mobileDevices'); // Certifique-se de que este arquivo existe e exporta um router
 const bagRoutes = require('./routes/equipment/bags');
-const printerRoutes = require('./routes/equipment/printers');
-const tonerRoutes = require('./routes/equipment/toners');
+const printerRoutes = require('./routes/equipment/printers'); // Certifique-se de que este arquivo existe e exporta um router
+const tonerRoutes = require('./routes/equipment/toners'); // Certifique-se de que este arquivo existe e exporta um router
+
 
 // Usar rotas
 app.use('/api/auth', authRoutes);
-
-// Usar rotas de equipamentos
 app.use('/api/equipment/computers', computerRoutes);
 app.use('/api/equipment/mobile-devices', mobileDeviceRoutes);
 app.use('/api/equipment/bags', bagRoutes);
 app.use('/api/equipment/printers', printerRoutes);
 app.use('/api/equipment/toners', tonerRoutes);
+
 
 // Rota básica para teste
 app.get('/', (req, res) => {

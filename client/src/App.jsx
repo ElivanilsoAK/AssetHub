@@ -9,7 +9,7 @@ import Inventory from './pages/Inventory';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 
-// Páginas de equipamentos
+// Páginas de equipamentos (Importações corrigidas para default)
 import Computers from './pages/equipment/Computers';
 import MobileDevices from './pages/equipment/MobileDevices';
 import Bags from './pages/equipment/Bags';

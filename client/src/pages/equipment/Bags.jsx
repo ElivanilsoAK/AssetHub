@@ -27,7 +27,10 @@ import {
   MenuItem,
   Chip,
   Snackbar,
-  Alert
+  Alert,
+  CircularProgress,
+  InputAdornment,  
+  Avatar           
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -39,7 +42,8 @@ import {
   ExitToApp as LogoutIcon,
   Search as SearchIcon,
   FilterList as FilterIcon,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  Add as AddIcon
 } from '@mui/icons-material';
 
 // Componente Sidebar reutilizável
