@@ -46,7 +46,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; //
 const Toners = () => {
   const navigate = useNavigate();
   const [toners, setToners] = useState([]);
-  const [loading, setLoading] = true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [currentToner, setCurrentToner] = useState(null);
