@@ -16,9 +16,7 @@ import MobileDevices from './pages/equipment/MobileDevices';
 import Bags from './pages/equipment/Bags';
 import Printers from './pages/equipment/Printers';
 import Toners from './pages/equipment/Toners';
-
-import React from 'react';
-import logo from './assets/image/logo.png';
+import Register from './pages/Register'; // Importar a página de registro
 
 // Tema personalizado (mantém-se o mesmo)
 const theme = createTheme({
@@ -73,11 +71,6 @@ function App() {
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
-
-          // Adicione o import
-          import Register from './pages/Register';
-          
-          // Adicione a rota (junto com as rotas de login)
           <Route path="/register" element={<Register />} />
           {/* Todas as rotas que usam a sidebar serão filhas de / */}
           <Route element={<Layout />}>
