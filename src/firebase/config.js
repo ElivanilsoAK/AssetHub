@@ -1,10 +1,10 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import { getStorage } from 'firebase/storage';
+import { getFirestore } from 'firebase/firestore';
 import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
+  // Substitua estas configurações pelas suas do Firebase Console
   apiKey: "AIzaSyBlTYA8D6hnGm9O71gfXZIV3Dgmre8eeBY",
   authDomain: "assethub-1ea27.firebaseapp.com",
   projectId: "assethub-1ea27",
@@ -14,12 +14,7 @@ const firebaseConfig = {
   measurementId: "G-9EF8KNN7V5"
 };
 
-// Inicializa o Firebase
 const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
 const analytics = getAnalytics(app);
-// Inicializa serviços
-const db = getFirestore(app);
-const auth = getAuth(app);
-const storage = getStorage(app);
-
-export { db, auth, storage };
