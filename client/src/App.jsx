@@ -67,7 +67,12 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router>
+      <Router
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true
+        }}
+      >
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
@@ -85,6 +90,13 @@ function App() {
             <Route path="/equipment/bags" element={<Bags />} />
             <Route path="/equipment/printers" element={<Printers />} />
             <Route path="/equipment/toners" element={<Toners />} />
+            
+            {/* Adicionar rotas alternativas para compatibilidade */}
+            <Route path="/inventory/bags" element={<Bags />} />
+            <Route path="/inventory/computers" element={<Computers />} />
+            <Route path="/inventory/mobile" element={<MobileDevices />} />
+            <Route path="/inventory/printers" element={<Printers />} />
+            <Route path="/inventory/toners" element={<Toners />} />
           </Route>
         </Routes>
       </Router>

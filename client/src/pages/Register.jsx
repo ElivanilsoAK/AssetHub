@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
 import { motion } from 'framer-motion';
 import {
   Container,
@@ -15,6 +14,9 @@ import {
 } from '@mui/material';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 
+// Importar serviço de autenticação do Firebase
+import { registerUser } from '../firebase/services/authService';
+
 const Register = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -25,6 +27,7 @@ const Register = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false); // Novo estado para mensagem de sucesso
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -37,6 +40,7 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess(false);
 
     // Validar senha
     if (formData.password !== formData.confirmPassword) {
@@ -47,22 +51,29 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/register', {
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
-        department: formData.department
-      });
+      // Registrar usuário usando Firebase
+      const userData = await registerUser(
+        formData.name,
+        formData.email,
+        formData.password,
+        formData.department
+      );
 
-      // Salvar token no localStorage
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-
-      // Redirecionar para o dashboard
-      navigate('/dashboard');
+      // Salvar dados do usuário no localStorage
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      // Mostrar mensagem de sucesso
+      setSuccess(true);
+      
+      // Redirecionar para o login após 2 segundos
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+      
     } catch (error) {
+      console.error('Erro no registro:', error);
       setError(
-        error.response?.data?.message ||
+        error.message ||
         'Erro ao registrar. Verifique os dados e tente novamente.'
       );
     } finally {
@@ -115,6 +126,12 @@ const Register = () => {
             {error && (
               <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
                 {error}
+              </Alert>
+            )}
+            
+            {success && (
+              <Alert severity="success" sx={{ width: '100%', mb: 2 }}>
+                Registro realizado com sucesso! Redirecionando para o login...
               </Alert>
             )}
 

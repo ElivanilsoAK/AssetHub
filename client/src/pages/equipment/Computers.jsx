@@ -43,7 +43,7 @@ import {
   Settings as SettingsIcon,
   ExitToApp as LogoutIcon
 } from '@mui/icons-material';
-
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 // Reutilizando o componente Sidebar
 const Sidebar = ({ activeItem, setActiveItem }) => {
   const navigate = useNavigate();
@@ -209,7 +209,10 @@ const Computers = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/equipment/computers', {
+      // Adicione esta linha no início do arquivo, após os imports
+    
+      
+      const response = await axios.get(`${API_BASE_URL}/equipment/computers`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setComputers(response.data);
@@ -427,16 +430,15 @@ const Computers = () => {
                   </Button>
                 </Box>
               </Box>
-              
+            
               {loading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-                  <CircularProgress />
-                </Box>
-              ) : error ? (
-                <Alert severity="error" sx={{ mb: 3 }}>
-                  {error}
-                </Alert>
-              ) : (
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '70vh' }}>
+                <CircularProgress size={60} />
+                <Typography variant="h6" sx={{ ml: 2 }}>Carregando dados...</Typography>
+              </Box>
+            ) : error ? (
+              <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
+            ) : (
                 <TableContainer>
                   <Table>
                     <TableHead>

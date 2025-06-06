@@ -1,155 +1,138 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom'; // Importe Link aqui
-import axios from 'axios';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Container,
   Box,
+  Container,
+  Paper,
   Typography,
   TextField,
   Button,
-  Paper,
-  Alert,
+  Link,
   CircularProgress,
-  Grid // Importe Grid aqui
+  Alert
 } from '@mui/material';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+
+// Importar serviço de autenticação do Firebase
+import { loginUser, getCurrentUser } from '../firebase/services/authService';
 
 const Login = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Verificar se o usuário já está autenticado
+    const checkAuth = async () => {
+      try {
+        const user = await getCurrentUser();
+        if (user) {
+          // Usuário já autenticado, redirecionar para o dashboard
+          navigate('/dashboard');
+        }
+      } catch (err) {
+        console.error('Erro ao verificar autenticação:', err);
+      }
+    };
+    
+    checkAuth();
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError(null);
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
-        email,
-        password
-      });
-
-      // Salvar token no localStorage
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-
+      // Fazer login usando o Firebase
+      const userData = await loginUser(email, password);
+      
+      // Salvar dados do usuário no localStorage para acesso fácil
+      localStorage.setItem('user', JSON.stringify(userData));
+      
       // Redirecionar para o dashboard
       navigate('/dashboard');
-    } catch (error) {
-      setError(
-        error.response?.data?.message ||
-        'Erro ao fazer login. Verifique suas credenciais.'
-      );
+    } catch (err) {
+      console.error('Erro no login:', err);
+      setError(err.message || 'Falha no login. Verifique suas credenciais.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    // Envolva os elementos em um React.Fragment para ter um único elemento raiz
-    <>
-      <Container component="main" maxWidth="xs">
+    <Container maxWidth="sm">
+      <Box sx={{ mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
+          style={{ width: '100%' }}
         >
-          <Box
-            sx={{
-              marginTop: 8,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-            }}
-          >
-            <Paper
-              elevation={3}
-              className="glass-card"
-              sx={{
-                p: 4,
-                width: '100%',
-                borderRadius: 4,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-              }}
-            >
-              <Box
-                sx={{
-                  bgcolor: 'primary.main',
-                  color: 'white',
-                  borderRadius: '50%',
-                  p: 2,
-                  mb: 2,
-                }}
-              >
-                <LockOutlinedIcon />
-              </Box>
-              <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
+          <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
+            <Box sx={{ mb: 3, textAlign: 'center' }}>
+              <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
                 AssetHUB
               </Typography>
-              <Typography component="h2" variant="subtitle1" sx={{ mb: 3 }}>
-                Gerenciamento de Inventário de TI
+              <Typography variant="subtitle1" color="text.secondary">
+                Sistema de Gerenciamento de Ativos
               </Typography>
+            </Box>
 
-              {error && (
-                <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
-                  {error}
-                </Alert>
-              )}
+            {error && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                {error}
+              </Alert>
+            )}
 
-              <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
-                <TextField
-                  margin="normal"
-                  required
-                  fullWidth
-                  id="email"
-                  label="Email"
-                  name="email"
-                  autoComplete="email"
-                  autoFocus
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-                <TextField
-                  margin="normal"
-                  required
-                  fullWidth
-                  name="password"
-                  label="Senha"
-                  type="password"
-                  id="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                <Button
-                  type="submit"
-                  fullWidth
-                  variant="contained"
-                  sx={{ mt: 3, mb: 2, py: 1.5 }}
-                  disabled={loading}
-                >
-                  {loading ? <CircularProgress size={24} /> : 'Entrar'}
-                </Button>
+            <Box component="form" onSubmit={handleSubmit}>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="email"
+                label="Email"
+                name="email"
+                autoComplete="email"
+                autoFocus
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+              />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                name="password"
+                label="Senha"
+                type="password"
+                id="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+              />
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{ mt: 3, mb: 2, py: 1.5 }}
+                disabled={loading}
+              >
+                {loading ? <CircularProgress size={24} /> : 'Entrar'}
+              </Button>
+              <Box sx={{ textAlign: 'center' }}>
+                <Link href="/register" variant="body2">
+                  Não tem uma conta? Registre-se
+                </Link>
               </Box>
-            </Paper>
-          </Box>
+            </Box>
+          </Paper>
         </motion.div>
-      </Container>
-      {/* O Link foi movido para fora do Container e dentro do Fragment */}
-      <Grid container justifyContent="center" sx={{ mt: 2 }}> {/* Adicionei margem superior aqui para separar do formulário */}
-        <Grid item>
-          <Link to="/register" style={{ textDecoration: 'none', color: '#6a1b9a' }}>
-            Não tem uma conta? Registre-se
-          </Link>
-        </Grid>
-      </Grid>
-    </>
+      </Box>
+    </Container>
   );
 };
 
