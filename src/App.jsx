@@ -5,6 +5,7 @@ import { theme } from './theme/theme'
 import Login from './pages/Login'
 import Home from './pages/Home'
 import Inventory from './pages/Inventory'
+import PrivateRoute from './components/PrivateRoute'
 
 function App() {
   return (
@@ -13,8 +14,8 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/inventory" element={<Inventory />} />
+          <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
+          <Route path="/inventory" element={<PrivateRoute><Inventory /></PrivateRoute>} />
           <Route path="/" element={<Navigate to="/home" />} />
         </Routes>
       </Router>
